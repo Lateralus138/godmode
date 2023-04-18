@@ -1,0 +1,144 @@
+name: Build God Mode Windows
+on:
+  push:
+    paths:
+      - '**.cpp'
+      - '**.h'
+      - '**.o'
+      - '**.sln'
+      - '**.yml'
+      - '*.yml'
+      - '**.ps1'
+env:
+  VS_PROGRAM: 1
+  VS_FILE: 0
+  VS_EPOCH:
+  VS_FULL:
+  RELEASE_TITLE: "God Mode"
+  RELEASE_FILE: "./docs/md/release.md"
+  BIN_DEFAULT: "godmode"
+  PRERELEASE: False
+jobs:
+  build_windows:
+    name: Build Windows Project
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: microsoft/setup-msbuild@v1.3.1
+    - id: make_godmode
+      run: |
+        cd scripts
+        ./buildwindows.ps1
+        if ($LASTEXITCODE -gt 0)
+        {
+          Write-Host "[$LASTEXITCODE] - Error in build script."
+          Exit $LASTEXITCODE
+        }
+        cd ../
+        $epoch = [decimal] [datetimeoffset]::UtcNow.ToUnixTimeMilliseconds()
+        Write-Host "Test"
+        echo "VS_FULL=${{ env.VS_PROGRAM }}.${{ env.VS_FILE }}.$epoch" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+        $godmode_x86_md5_text = @'
+        {
+          "schemaVersion": 1,
+          "color": "2E9778",
+          "label": "godmode-x86.exe MD5",
+          "message": "PLACEHOLDER",
+          "labelColor": "1d1d1d",
+          "style": "for-the-badge",
+          "namedLogo": "windows"
+        }
+        '@
+        New-Item -ItemType Directory -Force -Path '.\docs\json'
+        Write-Output "$godmode_x86_md5_text" > .\docs\json\godmode_x86_md5.json
+        $file = ".\docs\json\godmode_x86_md5.json"
+        $md5 = New-Object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
+        $(Get-FileHash -Path "build\windows\x86\godmode-x86.exe" -Algorithm MD5).Hash
+        $hash = $(Get-FileHash -Path "build\windows\x86\godmode-x86.exe" -Algorithm MD5).Hash
+        ((Get-Content -path $file -Raw) -replace 'PLACEHOLDER',$hash) | Set-Content -Path "$file"
+        $godmode_x64_md5_text = @'
+        {
+          "schemaVersion": 1,
+          "color": "2E9778",
+          "label": "godmode-x64.exe MD5",
+          "message": "PLACEHOLDER",
+          "labelColor": "1d1d1d",
+          "style": "for-the-badge",
+          "namedLogo": "windows"
+        }
+        '@
+        Write-Output "$godmode_x64_md5_text" > .\docs\json\godmode_x64_md5.json
+        $file = ".\docs\json\godmode_x64_md5.json"
+        $md5 = New-Object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
+        $hash = $(Get-FileHash -Path "build\windows\x64\godmode-x64.exe" -Algorithm MD5).Hash
+        ((Get-Content -path $file -Raw) -replace 'PLACEHOLDER',$hash) | Set-Content -Path "$file"
+        Copy-Item -Path .\build\windows\x86\godmode-x86.exe -Destination .\scripts\setup\godmode\x86_\ -Force
+        Copy-Item -Path .\build\windows\x64\godmode-x64.exe -Destination .\scripts\setup\godmode\x64_\ -Force
+        Move-Item -Path .\scripts\setup\godmode\x86_\godmode-x86.exe -Destination .\scripts\setup\godmode\x86_\godmode.exe
+        Move-Item -Path .\scripts\setup\godmode\x64_\godmode-x64.exe -Destination .\scripts\setup\godmode\x64_\godmode.exe
+        cd scripts\setup
+        ISCC.exe godmode\x86_\godmode_x86.iss
+        if ($LASTEXITCODE -gt 0)
+        {
+          Write-Host "[$LASTEXITCODE] - Error while building x86 setup."
+          Exit 250
+        }
+        cd ..\..\
+        $godmode_x86_installer_md5_text = @'
+        {
+          "schemaVersion": 1,
+          "color": "2E9778",
+          "label": "godmode_x86_installer.exe MD5",
+          "message": "PLACEHOLDER",
+          "labelColor": "1d1d1d",
+          "style": "for-the-badge",
+          "namedLogo": "windows"
+        }
+        '@
+        Write-Output "$godmode_x86_installer_md5_text" > .\docs\json\godmode_x86_installer_md5.json
+        $file = ".\docs\json\godmode_x86_installer_md5.json"
+        $md5 = New-Object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
+        $(Get-FileHash -Path "scripts\setup\godmode\x86_\Output\godmode_x86_installer.exe" -Algorithm MD5).Hash
+        $hash = $(Get-FileHash -Path "scripts\setup\godmode\x86_\Output\godmode_x86_installer.exe" -Algorithm MD5).Hash
+        ((Get-Content -path $file -Raw) -replace 'PLACEHOLDER',$hash) | Set-Content -Path "$file"
+        cd scripts\setup
+        ISCC.exe godmode\x64_\godmode_x64.iss
+        if ($LASTEXITCODE -gt 0)
+        {
+          Write-Host "[$LASTEXITCODE] - Error while building x64 setup."
+          Exit 249
+        }
+        cd ..\..\
+        $godmode_x64_installer_md5_text = @'
+        {
+          "schemaVersion": 1,
+          "color": "2E9778",
+          "label": "godmode_x64_installer.exe MD5",
+          "message": "PLACEHOLDER",
+          "labelColor": "1d1d1d",
+          "style": "for-the-badge",
+          "namedLogo": "windows"
+        }
+        '@
+        Write-Output "$godmode_x64_installer_md5_text" > .\docs\json\godmode_x64_installer_md5.json
+        $file = ".\docs\json\godmode_x64_installer_md5.json"
+        $md5 = New-Object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider
+        $(Get-FileHash -Path "scripts\setup\godmode\x64_\Output\godmode_x64_installer.exe" -Algorithm MD5).Hash
+        $hash = $(Get-FileHash -Path "scripts\setup\godmode\x64_\Output\godmode_x64_installer.exe" -Algorithm MD5).Hash
+        ((Get-Content -path $file -Raw) -replace 'PLACEHOLDER',$hash) | Set-Content -Path "$file"
+        git pull
+        git add .\docs\json\*
+        git config --global user.name 'Lateralus138'
+        git config --global user.email 'Lateralus138@users.noreply.github.com'
+        git commit --allow-empty -am "Pushed .\docs\json\* to master. - $(Get-Date ([datetime]::UtcNow)) UTC"
+        git push --force origin master
+    - uses: ncipollo/release-action@v1
+      if: steps.make_godmode.conclusion == 'success'
+      with:
+        allowUpdates: True
+        tag: ${{ env.VS_FULL }}
+        name: ${{ env.RELEASE_TITLE }} - v${{ env.VS_FULL }}
+        bodyFile: ${{ env.RELEASE_FILE }}
+        prerelease: ${{ env.PRERELEASE }}
+        artifacts: build\windows\x86\${{ env.BIN_DEFAULT }}-x86.exe,build\windows\x64\${{ env.BIN_DEFAULT }}-x64.exe,scripts\setup\godmode\x86_\Output\godmode_x86_installer.exe,scripts\setup\godmode\x64_\Output\godmode_x64_installer.exe
+        token: ${{ secrets.GITHUB_TOKEN }}
